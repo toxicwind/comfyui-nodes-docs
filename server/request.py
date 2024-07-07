@@ -12,7 +12,7 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.join(CURRENT_DIR, '..')
 
 cache_dir = os.path.join(root_dir, '.cache')
-docs_dir = os.path.join(root_dir, 'docs')
+docs_dir = os.path.join(root_dir, 'docs_eng')
 setting_path = os.path.join(cache_dir, '.setting.json')
 device_id_path = os.path.join(cache_dir, '.cache_d_id')
 

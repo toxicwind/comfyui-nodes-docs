@@ -1,0 +1,318 @@
+# Documentation
+- Class name: PromptWithStyleV3
+- Category: Mikey
+- Output node: False
+- Repo Ref: https://github.com/bash-j/mikey_nodes
+
+PromptWithStyleV3 node is designed to generate image samples based on a combination of positive and negative hints and optional style specifications. It manages the complexity of integrating style and conditions into the image generation process and provides a seamless way to influence output according to the required characteristics. The node abstracts the complexity of applying style and sampling conditions, providing a simple interface for the user to synthesize images.
+
+# Input types
+## Required
+- positive_prompt
+    - A positive hint is a descriptive text that guides image generation towards desired characteristics. It plays a crucial role in guiding the creation process towards images that are consistent with the user's vision. Nodes rely on the positive hint to determine what should be emphasized in the images generated.
+    - Comfy dtype: STRING
+    - Python dtype: str
+- negative_prompt
+    - A negative hint is the opposite of a positive hint that directs the image to avoid unnecessary features or elements. It is an important parameter for fine-tuning output and ensuring that the image generated excludes certain features that the user wishes to avoid.
+    - Comfy dtype: STRING
+    - Python dtype: str
+- ratio_selected
+    - The selected ratio parameter determines the width ratio in which the image is generated. It is a key factor in setting the output size, allowing the user to select or specify a custom ratio from a predefined range of ratios to control the shape in which the image is generated.
+    - Comfy dtype: COMBO[INT]
+    - Python dtype: List[int]
+## Optional
+- custom_size
+    - Custom size input allows the user to specify a non-standard size for the image that is generated. When enabled, the user can enter a custom width and height so that they can fully control the size of the output image, which is very useful for specific display requirements or design limitations.
+    - Comfy dtype: STRING
+    - Python dtype: str
+- fit_custom_size
+    - Adaptive to custom size parameters is used in conjunction with a custom size input to determine how the image produced should fit the specified size. It determines whether the image should be scaled to match the exact size provided by the user.
+    - Comfy dtype: STRING
+    - Python dtype: str
+- custom_width
+    - When a custom image size is enabled, the custom width parameter sets the width of the image generated. It works in conjunction with the custom height parameter to define the exact size of the output and allows accurate control of the image width.
+    - Comfy dtype: INT
+    - Python dtype: int
+- custom_height
+    - Custom height parameters are used in conjunction with custom widths to determine the vertical dimensions of the image generated. It is particularly useful when the output requires a specific height, which enables the user to control accurately the height of the image.
+    - Comfy dtype: INT
+    - Python dtype: int
+- batch_size
+    - Batch size parameters define the number of images generated in a single process. It is an important factor in the management of computing resources and can affect the efficiency of the image generation process. Adjusting the batch size helps to balance performance with the number of images generated at one time.
+    - Comfy dtype: INT
+    - Python dtype: int
+- seed
+    - Seed parameters are used to introduce randomity in the image generation process. It ensures that each operation using the same seed produces a set of identified images, which is very useful to obtain consistent results or to fine-tune the process through experiments.
+    - Comfy dtype: INT
+    - Python dtype: int
+- target_mode
+    - Target mode parameters specify the scaling policy to generate the image. It allows users to select different scaling options, such as double or four times the size, which may affect the level of detail and overall appearance of the output image.
+    - Comfy dtype: COMBO[STRING]
+    - Python dtype: List[str]
+- base_model
+    - The basic model parameter refers to the bottom model used for image generation. It is a key component that determines the quality and style of image creation. Users can choose from a range of pre-training models to achieve different artistic effects.
+    - Comfy dtype: MODEL
+    - Python dtype: torch.nn.Module
+- clip_base
+    - The CLIP base parameter is linked to the CLIP model used for text-to-image conversion. It plays an important role in how the text suggests how to be interpreted and converted into visual elements. The CLIP base selection can influence the thematic coherence and style details that generate the image.
+    - Comfy dtype: CLIP
+    - Python dtype: torch.nn.Module
+- clip_refiner
+    - CLIP fine-tuning parameters are used to improve the quality of images generated by applying secondary processing steps. It is an optional component that provides users with additional control over the fine detail and style elements of the output and enables them to achieve more refined and refined results.
+    - Comfy dtype: CLIP
+    - Python dtype: torch.nn.Module
+
+# Output types
+- base_model
+    - The base model output provides a bottom model for the image generation process. It is a key component that defines the basic structure and capabilities of the image synthesis mission. This output can be used for further processing or analysis of the model itself.
+    - Comfy dtype: MODEL
+    - Python dtype: torch.nn.Module
+- samples
+    - The sample output contains samples of the images generated, which are the main results of the image-generation process. These samples reflect the visual effects of input tips and styles and provide tangible results that can be viewed, displayed or further operated.
+    - Comfy dtype: LATENT
+    - Python dtype: torch.Tensor
+- base_pos_cond
+    - The underlying positive condition output represents the positive condition vector derived from the underlying model. It is used to guide the image generation process to produce images that match the positive aspects specified in the reminder.
+    - Comfy dtype: CONDITIONING
+    - Python dtype: torch.Tensor
+- base_neg_cond
+    - A base negative condition output is a negative condition vector that helps to direct image generation away from unwanted features. It is an important part of ensuring that the images are produced without elements that are inconsistent with the user's preferences.
+    - Comfy dtype: CONDITIONING
+    - Python dtype: torch.Tensor
+- refiner_pos_cond
+    - The refined positive condition output is the enhanced positive condition vector applied in the secondary processing steps for image generation. It is used to further refine the image to ensure that it closely matches the desired positive attributes.
+    - Comfy dtype: CONDITIONING
+    - Python dtype: torch.Tensor
+- refiner_neg_cond
+    - A fine-tuning negative condition output is an enhanced negative condition vector used to fine-tune the image generation process and to exclude more complex unwanted features. It helps to achieve a higher level of detail and accuracy in the final output image.
+    - Comfy dtype: CONDITIONING
+    - Python dtype: torch.Tensor
+- positive_prompt
+    - A positive tip output reflects the text of a processed positive tip used in image generation. It is a text input that guides the model to create an image with the required characteristics and can be used for reference or further analysis.
+    - Comfy dtype: STRING
+    - Python dtype: str
+- negative_prompt
+    - Negative hint output is a processed negative hint text that helps to shape images by avoiding certain features. It is a key component to ensure that images are generated in compliance with user constraints and do not contain unwanted elements.
+    - Comfy dtype: STRING
+    - Python dtype: str
+
+# Usage tips
+- Infra type: GPU
+
+# Source code
+```
+class PromptWithStyleV3:
+
+    def __init__(self):
+        self.loaded_lora = None
+
+    @classmethod
+    def INPUT_TYPES(s):
+        (s.ratio_sizes, s.ratio_dict) = read_ratios()
+        (s.styles, s.pos_style, s.neg_style) = read_styles()
+        s.fit = ['true', 'false']
+        s.custom_size = ['true', 'false']
+        return {'required': {'positive_prompt': ('STRING', {'multiline': True, 'default': 'Positive Prompt'}), 'negative_prompt': ('STRING', {'multiline': True, 'default': 'Negative Prompt'}), 'ratio_selected': (s.ratio_sizes,), 'custom_size': (s.custom_size, {'default': 'false'}), 'fit_custom_size': (s.fit,), 'custom_width': ('INT', {'default': 1024, 'min': 1, 'max': 8192, 'step': 1}), 'custom_height': ('INT', {'default': 1024, 'min': 1, 'max': 8192, 'step': 1}), 'batch_size': ('INT', {'default': 1, 'min': 1, 'max': 64}), 'seed': ('INT', {'default': 0, 'min': 0, 'max': 18446744073709551615}), 'target_mode': (['match', '2x', '4x', '2x90', '4x90', '2048', '2048-90', '4096', '4096-90'], {'default': '4x'}), 'base_model': ('MODEL',), 'clip_base': ('CLIP',), 'clip_refiner': ('CLIP',)}, 'hidden': {'unique_id': 'UNIQUE_ID', 'extra_pnginfo': 'EXTRA_PNGINFO', 'prompt': 'PROMPT'}}
+    RETURN_TYPES = ('MODEL', 'LATENT', 'CONDITIONING', 'CONDITIONING', 'CONDITIONING', 'CONDITIONING', 'STRING', 'STRING')
+    RETURN_NAMES = ('base_model', 'samples', 'base_pos_cond', 'base_neg_cond', 'refiner_pos_cond', 'refiner_neg_cond', 'positive_prompt', 'negative_prompt')
+    FUNCTION = 'start'
+    CATEGORY = 'Mikey'
+
+    def extract_and_load_loras(self, text, model, clip):
+        lora_re = '<lora:(.*?)(?::(.*?))?>'
+        lora_prompts = re.findall(lora_re, text)
+        stripped_text = text
+        if len(lora_prompts) > 0:
+            for lora_prompt in lora_prompts:
+                lora_filename = lora_prompt[0]
+                if '.safetensors' not in lora_filename:
+                    lora_filename += '.safetensors'
+                try:
+                    lora_multiplier = float(lora_prompt[1]) if lora_prompt[1] != '' else 1.0
+                except:
+                    lora_multiplier = 1.0
+                (model, clip) = load_lora(model, clip, lora_filename, lora_multiplier, lora_multiplier)
+                stripped_text = stripped_text.replace(f'<lora:{lora_filename}:{lora_multiplier}>', '')
+                stripped_text = stripped_text.replace(f'<lora:{lora_filename}>', '')
+        return (model, clip, stripped_text)
+
+    def parse_prompts(self, positive_prompt, negative_prompt, style, seed):
+        positive_prompt = find_and_replace_wildcards(positive_prompt, seed, debug=True)
+        negative_prompt = find_and_replace_wildcards(negative_prompt, seed, debug=True)
+        if '{prompt}' in self.pos_style[style]:
+            positive_prompt = self.pos_style[style].replace('{prompt}', positive_prompt)
+        if positive_prompt == '' or positive_prompt == 'Positive Prompt' or positive_prompt is None:
+            pos_prompt = self.pos_style[style]
+        else:
+            pos_prompt = positive_prompt + ', ' + self.pos_style[style]
+        if negative_prompt == '' or negative_prompt == 'Negative Prompt' or negative_prompt is None:
+            neg_prompt = self.neg_style[style]
+        else:
+            neg_prompt = negative_prompt + ', ' + self.neg_style[style]
+        return (pos_prompt, neg_prompt)
+
+    def start(self, base_model, clip_base, clip_refiner, positive_prompt, negative_prompt, ratio_selected, batch_size, seed, custom_size='false', fit_custom_size='false', custom_width=1024, custom_height=1024, target_mode='match', unique_id=None, extra_pnginfo=None, prompt=None):
+        if extra_pnginfo is None:
+            extra_pnginfo = {'PromptWithStyle': {}}
+        prompt_with_style = extra_pnginfo.get('PromptWithStyle', {})
+        add_metadata_to_dict(prompt_with_style, positive_prompt=positive_prompt, negative_prompt=negative_prompt, ratio_selected=ratio_selected, batch_size=batch_size, seed=seed, custom_size=custom_size, fit_custom_size=fit_custom_size, custom_width=custom_width, custom_height=custom_height, target_mode=target_mode)
+        if custom_size == 'true':
+            if fit_custom_size == 'true':
+                if custom_width == 1 and custom_height == 1:
+                    (width, height) = (1024, 1024)
+                if custom_width == custom_height:
+                    (width, height) = (1024, 1024)
+                if f'{custom_width}:{custom_height}' in self.ratio_dict:
+                    (width, height) = self.ratio_dict[f'{custom_width}:{custom_height}']
+                else:
+                    (width, height) = find_latent_size(custom_width, custom_height)
+            else:
+                (width, height) = (custom_width, custom_height)
+        else:
+            width = self.ratio_dict[ratio_selected]['width']
+            height = self.ratio_dict[ratio_selected]['height']
+        latent = torch.zeros([batch_size, 4, height // 8, width // 8])
+        ratio = min([width, height]) / max([width, height])
+        if target_mode == 'match':
+            (target_width, target_height) = (width, height)
+            (refiner_width, refiner_height) = (width * 4, height * 4)
+        elif target_mode == '2x':
+            (target_width, target_height) = (width * 2, height * 2)
+            (refiner_width, refiner_height) = (width * 4, height * 4)
+        elif target_mode == '4x':
+            (target_width, target_height) = (width * 4, height * 4)
+            (refiner_width, refiner_height) = (width * 4, height * 4)
+        elif target_mode == '2x90':
+            (target_width, target_height) = (height * 2, width * 2)
+            (refiner_width, refiner_height) = (width * 4, height * 4)
+        elif target_mode == '4x90':
+            (target_width, target_height) = (height * 4, width * 4)
+            (refiner_width, refiner_height) = (width * 4, height * 4)
+        elif target_mode == '4096':
+            (target_width, target_height) = (4096, 4096 * ratio // 8 * 8) if width > height else (4096 * ratio // 8 * 8, 4096)
+            (refiner_width, refiner_height) = (width * 4, height * 4)
+        elif target_mode == '4096-90':
+            (target_width, target_height) = (4096, 4096 * ratio // 8 * 8) if width < height else (4096 * ratio // 8 * 8, 4096)
+            (refiner_width, refiner_height) = (width * 4, height * 4)
+        elif target_mode == '2048':
+            (target_width, target_height) = (2048, 2048 * ratio // 8 * 8) if width > height else (2048 * ratio // 8 * 8, 2048)
+            (refiner_width, refiner_height) = (width * 4, height * 4)
+        elif target_mode == '2048-90':
+            (target_width, target_height) = (2048, 2048 * ratio // 8 * 8) if width < height else (2048 * ratio // 8 * 8, 2048)
+            (refiner_width, refiner_height) = (width * 4, height * 4)
+        add_metadata_to_dict(prompt_with_style, width=width, height=height, target_width=target_width, target_height=target_height, refiner_width=refiner_width, refiner_height=refiner_height, crop_w=0, crop_h=0)
+        positive_prompt = search_and_replace(positive_prompt, extra_pnginfo, prompt)
+        negative_prompt = search_and_replace(negative_prompt, extra_pnginfo, prompt)
+        positive_prompt = process_random_syntax(positive_prompt, seed)
+        negative_prompt = process_random_syntax(negative_prompt, seed)
+        user_added_style = False
+        if '$style' in positive_prompt:
+            self.styles.append('user_added_style')
+            self.pos_style['user_added_style'] = positive_prompt.split('$style')[1].strip()
+            self.neg_style['user_added_style'] = ''
+            user_added_style = True
+        if '$style' in negative_prompt:
+            if 'user_added_style' not in self.styles:
+                self.styles.append('user_added_style')
+            self.neg_style['user_added_style'] = negative_prompt.split('$style')[1].strip()
+            user_added_style = True
+        if user_added_style:
+            positive_prompt = positive_prompt.split('$style')[0].strip()
+            if '$style' in negative_prompt:
+                negative_prompt = negative_prompt.split('$style')[0].strip()
+            positive_prompt = positive_prompt + '<style:user_added_style>'
+        positive_prompt_ = find_and_replace_wildcards(positive_prompt, seed, True)
+        negative_prompt_ = find_and_replace_wildcards(negative_prompt, seed, True)
+        add_metadata_to_dict(prompt_with_style, positive_prompt=positive_prompt_, negative_prompt=negative_prompt_)
+        if len(positive_prompt_) != len(positive_prompt) or len(negative_prompt_) != len(negative_prompt):
+            seed += random.randint(0, 1000000)
+        positive_prompt = positive_prompt_
+        negative_prompt = negative_prompt_
+        (base_model, clip_base_pos, pos_prompt) = self.extract_and_load_loras(positive_prompt, base_model, clip_base)
+        (base_model, clip_base_neg, neg_prompt) = self.extract_and_load_loras(negative_prompt, base_model, clip_base)
+        style_re = '<style:(.*?)>'
+        pos_style_prompts = re.findall(style_re, pos_prompt)
+        neg_style_prompts = re.findall(style_re, neg_prompt)
+        style_prompts = pos_style_prompts + neg_style_prompts
+        base_pos_conds = []
+        base_neg_conds = []
+        refiner_pos_conds = []
+        refiner_neg_conds = []
+        if len(style_prompts) == 0:
+            style_ = 'none'
+            (pos_prompt_, neg_prompt_) = self.parse_prompts(positive_prompt, negative_prompt, style_, seed)
+            (pos_style_, neg_style_) = (pos_prompt_, neg_prompt_)
+            (pos_prompt_, neg_prompt_) = (strip_all_syntax(pos_prompt_), strip_all_syntax(neg_prompt_))
+            (pos_style_, neg_style_) = (strip_all_syntax(pos_style_), strip_all_syntax(neg_style_))
+            add_metadata_to_dict(prompt_with_style, style=style_, clip_g_positive=pos_prompt, clip_l_positive=pos_style_)
+            add_metadata_to_dict(prompt_with_style, clip_g_negative=neg_prompt, clip_l_negative=neg_style_)
+            sdxl_pos_cond = CLIPTextEncodeSDXL.encode(self, clip_base_pos, width, height, 0, 0, target_width, target_height, pos_prompt_, pos_style_)[0]
+            sdxl_neg_cond = CLIPTextEncodeSDXL.encode(self, clip_base_neg, width, height, 0, 0, target_width, target_height, neg_prompt_, neg_style_)[0]
+            refiner_pos_cond = CLIPTextEncodeSDXLRefiner.encode(self, clip_refiner, 6, refiner_width, refiner_height, pos_prompt_)[0]
+            refiner_neg_cond = CLIPTextEncodeSDXLRefiner.encode(self, clip_refiner, 2.5, refiner_width, refiner_height, neg_prompt_)[0]
+            return (base_model, {'samples': latent}, sdxl_pos_cond, sdxl_neg_cond, refiner_pos_cond, refiner_neg_cond, pos_prompt_, neg_prompt_, {'extra_pnginfo': extra_pnginfo})
+        for style_prompt in style_prompts:
+            ' get output from PromptWithStyle.start '
+            style_ = style_prompt
+            if style_ not in self.styles:
+                style_search = next((x for x in self.styles if x.lower() == style_.lower()), None)
+                if style_search is None:
+                    style_ = 'none'
+                    continue
+                else:
+                    style_ = style_search
+            pos_prompt_ = re.sub(style_re, '', pos_prompt)
+            neg_prompt_ = re.sub(style_re, '', neg_prompt)
+            (pos_prompt_, neg_prompt_) = self.parse_prompts(pos_prompt_, neg_prompt_, style_, seed)
+            (pos_style_, neg_style_) = (str(self.pos_style[style_]), str(self.neg_style[style_]))
+            (pos_prompt_, neg_prompt_) = (strip_all_syntax(pos_prompt_), strip_all_syntax(neg_prompt_))
+            (pos_style_, neg_style_) = (strip_all_syntax(pos_style_), strip_all_syntax(neg_style_))
+            add_metadata_to_dict(prompt_with_style, style=style_, positive_prompt=pos_prompt_, negative_prompt=neg_prompt_, positive_style=pos_style_, negative_style=neg_style_)
+            (width_, height_) = (width, height)
+            (refiner_width_, refiner_height_) = (refiner_width, refiner_height)
+            add_metadata_to_dict(prompt_with_style, style=style_, clip_g_positive=pos_prompt_, clip_l_positive=pos_style_)
+            add_metadata_to_dict(prompt_with_style, clip_g_negative=neg_prompt_, clip_l_negative=neg_style_)
+            base_pos_conds.append(CLIPTextEncodeSDXL.encode(self, clip_base_pos, width_, height_, 0, 0, target_width, target_height, pos_prompt_, pos_style_)[0])
+            base_neg_conds.append(CLIPTextEncodeSDXL.encode(self, clip_base_neg, width_, height_, 0, 0, target_width, target_height, neg_prompt_, neg_style_)[0])
+            refiner_pos_conds.append(CLIPTextEncodeSDXLRefiner.encode(self, clip_refiner, 6, refiner_width_, refiner_height_, pos_prompt_)[0])
+            refiner_neg_conds.append(CLIPTextEncodeSDXLRefiner.encode(self, clip_refiner, 2.5, refiner_width_, refiner_height_, neg_prompt_)[0])
+        if len(base_pos_conds) == 0:
+            style_ = 'none'
+            (pos_prompt_, neg_prompt_) = self.parse_prompts(positive_prompt, negative_prompt, style_, seed)
+            (pos_style_, neg_style_) = (pos_prompt_, neg_prompt_)
+            (pos_prompt_, neg_prompt_) = (strip_all_syntax(pos_prompt_), strip_all_syntax(neg_prompt_))
+            (pos_style_, neg_style_) = (strip_all_syntax(pos_style_), strip_all_syntax(neg_style_))
+            add_metadata_to_dict(prompt_with_style, style=style_, clip_g_positive=pos_prompt_, clip_l_positive=pos_style_)
+            add_metadata_to_dict(prompt_with_style, clip_g_negative=neg_prompt_, clip_l_negative=neg_style_)
+            sdxl_pos_cond = CLIPTextEncodeSDXL.encode(self, clip_base_pos, width, height, 0, 0, target_width, target_height, pos_prompt_, pos_style_)[0]
+            sdxl_neg_cond = CLIPTextEncodeSDXL.encode(self, clip_base_neg, width, height, 0, 0, target_width, target_height, neg_prompt_, neg_style_)[0]
+            refiner_pos_cond = CLIPTextEncodeSDXLRefiner.encode(self, clip_refiner, 6, refiner_width, refiner_height, pos_prompt_)[0]
+            refiner_neg_cond = CLIPTextEncodeSDXLRefiner.encode(self, clip_refiner, 2.5, refiner_width, refiner_height, neg_prompt_)[0]
+            return (base_model, {'samples': latent}, sdxl_pos_cond, sdxl_neg_cond, refiner_pos_cond, refiner_neg_cond, pos_prompt_, neg_prompt_, {'extra_pnginfo': extra_pnginfo})
+        sdxl_pos_cond = base_pos_conds[0]
+        weight = 1
+        if len(base_pos_conds) > 1:
+            for i in range(1, len(base_pos_conds)):
+                weight += 1
+                sdxl_pos_cond = ConditioningAverage.addWeighted(self, base_pos_conds[i], sdxl_pos_cond, 1 / weight)[0]
+        sdxl_neg_cond = base_neg_conds[0]
+        weight = 1
+        if len(base_neg_conds) > 1:
+            for i in range(1, len(base_neg_conds)):
+                weight += 1
+                sdxl_neg_cond = ConditioningAverage.addWeighted(self, base_neg_conds[i], sdxl_neg_cond, 1 / weight)[0]
+        refiner_pos_cond = refiner_pos_conds[0]
+        weight = 1
+        if len(refiner_pos_conds) > 1:
+            for i in range(1, len(refiner_pos_conds)):
+                weight += 1
+                refiner_pos_cond = ConditioningAverage.addWeighted(self, refiner_pos_conds[i], refiner_pos_cond, 1 / weight)[0]
+        refiner_neg_cond = refiner_neg_conds[0]
+        weight = 1
+        if len(refiner_neg_conds) > 1:
+            for i in range(1, len(refiner_neg_conds)):
+                weight += 1
+                refiner_neg_cond = ConditioningAverage.addWeighted(self, refiner_neg_conds[i], refiner_neg_cond, 1 / weight)[0]
+        extra_pnginfo['PromptWithStyle'] = prompt_with_style
+        return (base_model, {'samples': latent}, sdxl_pos_cond, sdxl_neg_cond, refiner_pos_cond, refiner_neg_cond, pos_prompt_, neg_prompt_, {'extra_pnginfo': extra_pnginfo})
+```
